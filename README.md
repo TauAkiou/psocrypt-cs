@@ -26,6 +26,7 @@ A full copy of the AGPLv3 license is provided alongside this library.
 
 ##BUILD REQUIREMENTS:
 * Visual Studio 2013 or later.
+* .NET Framework 4.5.2
 
 ##BUILD INSTRUCTIONS:
 * Build the project corresponding to the flavor of encryption you wish to utilize.
