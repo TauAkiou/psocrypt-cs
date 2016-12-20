@@ -16,7 +16,7 @@ Any modifications to this code must be licensed under the AGPLv3. Updates made t
 A full copy of the AGPLv3 license is provided alongside this library.
 
 ##SUPPORTED:
-* Phantasy Star Online PC/Dreamcast (Any version for these platforms that uses the standard PC/DC encryption should work.
+* Phantasy Star Online PC/Dreamcast (Any version for these platforms that uses the standard PC/DC encryption should work.)
 * Phantasy Star Online Gamecube _(experimental and untested; probably does not work right now)_
 * Phantasy Star Online: Blue Burst
 
