@@ -1,0 +1,6 @@
+/* PSO Encryption Library 
+ * 
+ * All included source written by Fuzziqer Software except where otherwise 
+ * indicated. 
+ * copyright 2004 
+ */
