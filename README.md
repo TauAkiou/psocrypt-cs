@@ -10,10 +10,10 @@ Tethealla is licensed under the GPLv3, and Sylverant is licensed under the Affro
 
 Implimentation is mostly ad-verbatim from the original code.
 
-This code is licensed under the Affro GPL v3. You are free to distribute and use this library as you see fit.
+This code is licensed under the GPL v3. You are free to distribute and use this library as you see fit.
 Any modifications to this code must be licensed under the AGPLv3. Updates made to the source code must be provided in accordance with the terms of the license. No warranty or liability is provided with the use of this library. I cannot be held responsible or personally liable for any damages or data loss that may result by using this software.
 
-A full copy of the AGPLv3 license is provided alongside this library.
+A full copy of the GPLv3 license is provided alongside this library.
 
 ##SUPPORTED:
 * Phantasy Star Online PC/Dreamcast (Any version for these platforms that uses the standard PC/DC encryption should work.)
