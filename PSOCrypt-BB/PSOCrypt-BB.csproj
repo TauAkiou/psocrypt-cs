@@ -40,7 +40,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="PSOEncryptionException.cs" />
+    <Compile Include="PSOCryptException.cs" />
     <Compile Include="Tables\BBTableTethealla.cs" />
     <Compile Include="Tables\BBTableUS.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
