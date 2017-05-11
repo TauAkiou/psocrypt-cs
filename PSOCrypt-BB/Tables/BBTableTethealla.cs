@@ -6,15 +6,17 @@ using System.Threading.Tasks;
 
 namespace PSOCrypt.Tables
 {
-    /*
-     * This is the codetable for the Tethealla Teth12510 client. This table was provided with Tethealla.
-     * 
-     * The original source header from Tethealla is supplied alongside this distribution as "Tethealla_Header.txt".
-     * 
-     */
-    public static class BbTableTethealla 
+
+    /// <summary>
+    /// This is the codetable for the Tethealla Teth12510 client. This table was provided with Tethealla.
+    /// 
+    /// The original source header from Tethealla is supplied alongside this distribution as "Tethealla_Header.txt".
+    /// 
+    /// </summary>
+
+    public class BbTableTethealla : IBBKeytable
     {
-        public static readonly uint[] Table =
+        public uint[] Table { get; } =
         {
             0x640cded2, 0xca6cf7cf, 0xc7bc95fb, 0x7d0d60a3, 0xcf23ad88, 0x8ffb62dc, 0x6c3da5cc,
             0x6bfcd6d6, 0x63f492df, 0xe32ebe65, 0xc3746b6d, 0xc5703934, 0xdc940bce, 0x590e0892,

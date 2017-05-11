@@ -17,7 +17,7 @@ namespace PSOCrypt
      *   Implimentation is mostly ad-verbatim from the original code.
      * 
      *   This program is free software: you can redistribute it and/or modify
-     *   it under the terms of the Affro GNU General Public License as published by
+     *   it under the terms of the GNU General Public License as published by
      *   the Free Software Foundation, either version 3 of the License, or
      *   (at your option) any later version.
      *   
@@ -26,7 +26,7 @@ namespace PSOCrypt
      *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
      *   Affro GNU General Public License for more details.
      *   
-     *   You should have received a copy of the Affro GNU General Public License
+     *   You should have received a copy of the GNU General Public License
      *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
      * 
      *   Original code copyright Fuzziqer Software 2004. Most code is attributed to Fuzziqer unless stated opherwise.
@@ -143,7 +143,7 @@ namespace PSOCrypt
             }
             catch (Exception e)
             {
-                throw new PsoEncryptionException("The packet decryptor encountered an error: " + e.Message);
+                throw new PSOCryptException("The packet decryptor encountered an error: " + e.Message);
             }
         }
 

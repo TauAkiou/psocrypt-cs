@@ -17,7 +17,7 @@ namespace PSOCrypt
          *   First written by Fuzziqer Software in C and ported to C# by TauAkiou.
          *   Code primarily adapted from the Tethealla (Larry Chatman Jr.) + Sylverant (Lawrence Siebald) projects.
          * 
-         *   Tethealla is licensed under the GPLv3, and Sylverant is licensed under the Affro GPLv3.
+         *   Tethealla is licensed under the GPLv3, and Sylverant is licensed under the GPLv3.
          * 
          *   Implimentation is mostly ad-verbatim from the original code.
          * 
@@ -57,6 +57,8 @@ namespace PSOCrypt
         public byte[] Seed { get; private set; }
 
 
+
+
         /*
          * PsoEncryptionBB(IEncryptionTableBB keytbl)
          * 
@@ -64,11 +66,22 @@ namespace PSOCrypt
          * and the specified keytable.
          *
          */
-        public PsoEncryptionBB(uint[] keytbl)
+
+        /// <summary>
+        /// Initializes the encryption object using a random cryptographic seed and the specified keytable.
+        /// </summary>
+        /// <param name="keytbl">The Blue Burst keytable that will be used to initialize encryption.</param>
+
+        public PsoEncryptionBB(IBBKeytable keytbl)
         {
+            if(keytbl.Table.Length != 1042)
+            {
+                throw new Exception("The supplied keytable is not valid.");
+            }
+
             using(RNGCryptoServiceProvider crng = new RNGCryptoServiceProvider())
             {
-                Keytable = keytbl;
+                Keytable = keytbl.Table;
                 Seed = new byte[48];
                 crng.GetBytes(Seed);
                 CreateKeys(Seed);
@@ -85,11 +98,33 @@ namespace PSOCrypt
         * This constructor is intended for testing purposes.
         * 
         */
-        public PsoEncryptionBB(uint[] keytbl, byte[] initseed)
+
+        /// <summary>
+        /// Initializes the encryption object using a discrete seed and the specified keytable. This is not intended for general use.
+        /// </summary>
+        /// <param name="keytbl"></param>
+        /// <param name="initseed"></param>
+        public PsoEncryptionBB(IBBKeytable keytbl, byte[] initseed)
         {
-            Keytable = keytbl;
-            CreateKeys(initseed);
-            Seed = initseed;
+            try
+            {
+                if (initseed.Length != 48)
+                {
+                    throw new Exception("The seed provided could not be used.");
+                }
+                else if (keytbl.Table.Length != 1042)
+                {
+                    throw new Exception("The supplied keytable is not valid.");
+                }
+
+                Keytable = keytbl.Table;
+                CreateKeys(initseed);
+                Seed = initseed;
+            }
+            catch (Exception ex)
+            {
+                throw new PSOCryptException("There was an initialization error.", ex);
+            }
         }
 
 
@@ -99,160 +134,86 @@ namespace PSOCrypt
          * 
          * Called on object construction.
          */
-        void CreateKeys(byte[] salt)
-        {
-            uint eax, ecx, edx, ebx, ebp, esi, edi, ou, x;
-            ushort dx;
-            byte[] s = new byte[48];
 
-            bb_posn = eax = ebx = 0;
-
-            Buffer.BlockCopy(salt, 0, s, 0, s.Length);
-            InitKeys(s);
-
-            var bbtbl = new ushort[Keytable.Length * 2];
-            var pcryp = new ushort[keys.Length * 2];
-
-
-            Buffer.BlockCopy(Keytable, 0, bbtbl, 0, (Keytable.Length * sizeof(uint)));
-            Buffer.BlockCopy(keys, 0, pcryp, 0, keys.Length * sizeof(uint));
-
-            /*
-             * This piece of code was pulled from Tethealla and is used to initialize the first 18 keys in the Tethealla keytable.
-             *
-             * The header from the Tethealla source is supplied alongside this package as "Tethealla_Header.txt".
-             */
-
-            for (ecx = 0; ecx < 0x12; ecx++)
-            {
-                dx = bbtbl[eax++];
-                dx = (ushort)(((dx & (ushort)0xFF) << 8) + (dx >> 8));
-                pcryp[ebx] = dx;
-                dx = bbtbl[eax++];
-                dx ^= pcryp[ebx++];
-                pcryp[ebx++] = dx;
-            }
-
-            // End
-
-            Buffer.BlockCopy(pcryp, 0, keys, 0, pcryp.Length * sizeof(ushort));
-
-            Buffer.BlockCopy(Keytable, 18 * sizeof(uint) , keys, 18 * sizeof(uint), 1024 * sizeof(uint));
+        /// <summary>
+        /// Initializes the keystore using the provided salt.
+        /// </summary>
+        /// <param name="salt">The encryption salt.</param>
         
-            ecx = 0;
-            ebx = 0;
-
-            while (ebx < 0x12)
+        private void CreateKeys(byte[] salt)
+        {
+            try
             {
-                ebp = ((uint)(s[ecx])) << 0x18;
-                eax = ecx + 1;
-                edx = eax - ((eax / 48) * 48);
-                eax = (((uint)(s[edx])) << 0x10) & 0xFF0000;
-                ebp = (ebp | eax) & 0xffff00ff;
-                eax = ecx + 2;
-                edx = eax - ((eax / 48) * 48);
-                eax = (((uint)(s[edx])) << 0x8) & 0xFF00;
-                ebp = (ebp | eax) & 0xffffff00;
-                eax = ecx + 3;
-                ecx = ecx + 4;
-                edx = eax - ((eax / 48) * 48);
-                eax = (uint)(s[edx]);
-                ebp = ebp | eax;
-                eax = ecx;
-                edx = eax - ((eax / 48) * 48);
-                keys[ebx] = keys[ebx] ^ ebp;
-                ecx = edx;
-                ebx++;
-            }
+                uint eax, ecx, edx, ebx, ebp, esi, edi, ou, x;
+                ushort dx;
+                byte[] s = new byte[48];
 
-            ebp = 0;
-            esi = 0;
-            ecx = 0;
-            edi = 0;
-            ebx = 0;
-            edx = 0x48;
+                bb_posn = eax = ebx = 0;
 
-            while (edi < edx)
-            {
-                esi = esi ^ keys[0];
-                eax = esi >> 0x18;
-                ebx = (esi >> 0x10) & 0xff;
-                eax = keys[eax + 0x12] + keys[ebx + 0x112];
-                ebx = (esi >> 8) & 0xFF;
-                eax = eax ^ keys[ebx + 0x212];
-                ebx = esi & 0xff;
-                eax = eax + keys[ebx + 0x312];
+                Buffer.BlockCopy(salt, 0, s, 0, s.Length);
+                InitKeys(s);
 
-                eax = eax ^ keys[1];
-                ecx = ecx ^ eax;
-                ebx = ecx >> 0x18;
-                eax = (ecx >> 0x10) & 0xFF;
-                ebx = keys[ebx + 0x12] + keys[eax + 0x112];
-                eax = (ecx >> 8) & 0xff;
-                ebx = ebx ^ keys[eax + 0x212];
-                eax = ecx & 0xff;
-                ebx = ebx + keys[eax + 0x312];
+                var bbtbl = new ushort[Keytable.Length * 2];
+                var pcryp = new ushort[keys.Length * 2];
 
-                for (x = 0; x <= 5; x++)
+
+                Buffer.BlockCopy(Keytable, 0, bbtbl, 0, (Keytable.Length * sizeof(uint)));
+                Buffer.BlockCopy(keys, 0, pcryp, 0, keys.Length * sizeof(uint));
+
+                /*
+                 * This piece of code was pulled from Tethealla and is used to initialize the first 18 keys in the Tethealla keytable.
+                 *
+                 * The header from the Tethealla source is supplied alongside this package as "Tethealla_Header.txt".
+                 */
+
+                for (ecx = 0; ecx < 0x12; ecx++)
                 {
-                    ebx = ebx ^ keys[(x * 2) + 2];
-                    esi = esi ^ ebx;
-                    ebx = esi >> 0x18;
-                    eax = (esi >> 0x10) & 0xFF;
-                    ebx = keys[ebx + 0x12] + keys[eax + 0x112];
-                    eax = (esi >> 8) & 0xff;
-                    ebx = ebx ^ keys[eax + 0x212];
-                    eax = esi & 0xff;
-                    ebx = ebx + keys[eax + 0x312];
-
-                    ebx = ebx ^ keys[(x * 2) + 3];
-                    ecx = ecx ^ ebx;
-                    ebx = ecx >> 0x18;
-                    eax = (ecx >> 0x10) & 0xFF;
-                    ebx = keys[ebx + 0x12] + keys[eax + 0x112];
-                    eax = (ecx >> 8) & 0xff;
-                    ebx = ebx ^ keys[eax + 0x212];
-                    eax = ecx & 0xff;
-                    ebx = ebx + keys[eax + 0x312];
+                    dx = bbtbl[eax++];
+                    dx = (ushort)(((dx & (ushort)0xFF) << 8) + (dx >> 8));
+                    pcryp[ebx] = dx;
+                    dx = bbtbl[eax++];
+                    dx ^= pcryp[ebx++];
+                    pcryp[ebx++] = dx;
                 }
 
-                ebx = ebx ^ keys[14];
-                esi = esi ^ ebx;
-                eax = esi >> 0x18;
-                ebx = (esi >> 0x10) & 0xFF;
-                eax = keys[eax + 0x12] + keys[ebx + 0x112];
-                ebx = (esi >> 8) & 0xff;
-                eax = eax ^ keys[ebx + 0x212];
-                ebx = esi & 0xff;
-                eax = eax + keys[ebx + 0x312];
+                // End
 
-                eax = eax ^ keys[15];
-                eax = ecx ^ eax;
-                ecx = eax >> 0x18;
-                ebx = (eax >> 0x10) & 0xFF;
-                ecx = keys[ecx + 0x12] + keys[ebx + 0x112];
-                ebx = (eax >> 8) & 0xff;
-                ecx = ecx ^ keys[ebx + 0x212];
-                ebx = eax & 0xff;
-                ecx = ecx + keys[ebx + 0x312];
+                Buffer.BlockCopy(pcryp, 0, keys, 0, pcryp.Length * sizeof(ushort));
 
-                ecx = ecx ^ keys[16];
-                ecx = ecx ^ esi;
-                esi = keys[17];
-                esi = esi ^ eax;
-                keys[(edi / 4)] = esi;
-                keys[(edi / 4) + 1] = ecx;
-                edi = edi + 8;
-            }
+                Buffer.BlockCopy(Keytable, 18 * sizeof(uint), keys, 18 * sizeof(uint), 1024 * sizeof(uint));
 
+                ecx = 0;
+                ebx = 0;
 
-            eax = 0;
-            edx = 0;
-            ou = 0;
-            while (ou < 0x1000)
-            {
-                edi = 0x48;
-                edx = 0x448;
+                while (ebx < 0x12)
+                {
+                    ebp = ((uint)(s[ecx])) << 0x18;
+                    eax = ecx + 1;
+                    edx = eax - ((eax / 48) * 48);
+                    eax = (((uint)(s[edx])) << 0x10) & 0xFF0000;
+                    ebp = (ebp | eax) & 0xffff00ff;
+                    eax = ecx + 2;
+                    edx = eax - ((eax / 48) * 48);
+                    eax = (((uint)(s[edx])) << 0x8) & 0xFF00;
+                    ebp = (ebp | eax) & 0xffffff00;
+                    eax = ecx + 3;
+                    ecx = ecx + 4;
+                    edx = eax - ((eax / 48) * 48);
+                    eax = (uint)(s[edx]);
+                    ebp = ebp | eax;
+                    eax = ecx;
+                    edx = eax - ((eax / 48) * 48);
+                    keys[ebx] = keys[ebx] ^ ebp;
+                    ecx = edx;
+                    ebx++;
+                }
+
+                ebp = 0;
+                esi = 0;
+                ecx = 0;
+                edi = 0;
+                ebx = 0;
+                edx = 0x48;
 
                 while (edi < edx)
                 {
@@ -322,22 +283,117 @@ namespace PSOCrypt
                     ecx = ecx ^ esi;
                     esi = keys[17];
                     esi = esi ^ eax;
-                    keys[(ou / 4) + (edi / 4)] = esi;
-                    keys[(ou / 4) + (edi / 4) + 1] = ecx;
+                    keys[(edi / 4)] = esi;
+                    keys[(edi / 4) + 1] = ecx;
                     edi = edi + 8;
                 }
-                ou = ou + 0x400;
+
+
+                eax = 0;
+                edx = 0;
+                ou = 0;
+                while (ou < 0x1000)
+                {
+                    edi = 0x48;
+                    edx = 0x448;
+
+                    while (edi < edx)
+                    {
+                        esi = esi ^ keys[0];
+                        eax = esi >> 0x18;
+                        ebx = (esi >> 0x10) & 0xff;
+                        eax = keys[eax + 0x12] + keys[ebx + 0x112];
+                        ebx = (esi >> 8) & 0xFF;
+                        eax = eax ^ keys[ebx + 0x212];
+                        ebx = esi & 0xff;
+                        eax = eax + keys[ebx + 0x312];
+
+                        eax = eax ^ keys[1];
+                        ecx = ecx ^ eax;
+                        ebx = ecx >> 0x18;
+                        eax = (ecx >> 0x10) & 0xFF;
+                        ebx = keys[ebx + 0x12] + keys[eax + 0x112];
+                        eax = (ecx >> 8) & 0xff;
+                        ebx = ebx ^ keys[eax + 0x212];
+                        eax = ecx & 0xff;
+                        ebx = ebx + keys[eax + 0x312];
+
+                        for (x = 0; x <= 5; x++)
+                        {
+                            ebx = ebx ^ keys[(x * 2) + 2];
+                            esi = esi ^ ebx;
+                            ebx = esi >> 0x18;
+                            eax = (esi >> 0x10) & 0xFF;
+                            ebx = keys[ebx + 0x12] + keys[eax + 0x112];
+                            eax = (esi >> 8) & 0xff;
+                            ebx = ebx ^ keys[eax + 0x212];
+                            eax = esi & 0xff;
+                            ebx = ebx + keys[eax + 0x312];
+
+                            ebx = ebx ^ keys[(x * 2) + 3];
+                            ecx = ecx ^ ebx;
+                            ebx = ecx >> 0x18;
+                            eax = (ecx >> 0x10) & 0xFF;
+                            ebx = keys[ebx + 0x12] + keys[eax + 0x112];
+                            eax = (ecx >> 8) & 0xff;
+                            ebx = ebx ^ keys[eax + 0x212];
+                            eax = ecx & 0xff;
+                            ebx = ebx + keys[eax + 0x312];
+                        }
+
+                        ebx = ebx ^ keys[14];
+                        esi = esi ^ ebx;
+                        eax = esi >> 0x18;
+                        ebx = (esi >> 0x10) & 0xFF;
+                        eax = keys[eax + 0x12] + keys[ebx + 0x112];
+                        ebx = (esi >> 8) & 0xff;
+                        eax = eax ^ keys[ebx + 0x212];
+                        ebx = esi & 0xff;
+                        eax = eax + keys[ebx + 0x312];
+
+                        eax = eax ^ keys[15];
+                        eax = ecx ^ eax;
+                        ecx = eax >> 0x18;
+                        ebx = (eax >> 0x10) & 0xFF;
+                        ecx = keys[ecx + 0x12] + keys[ebx + 0x112];
+                        ebx = (eax >> 8) & 0xff;
+                        ecx = ecx ^ keys[ebx + 0x212];
+                        ebx = eax & 0xff;
+                        ecx = ecx + keys[ebx + 0x312];
+
+                        ecx = ecx ^ keys[16];
+                        ecx = ecx ^ esi;
+                        esi = keys[17];
+                        esi = esi ^ eax;
+                        keys[(ou / 4) + (edi / 4)] = esi;
+                        keys[(ou / 4) + (edi / 4) + 1] = ecx;
+                        edi = edi + 8;
+                    }
+                    ou = ou + 0x400;
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("There was an error generating key data.", ex);
             }
         }
 
-    /*
-    * byte[] Decrypt(byte[] ToEnd, int offset, int length)
-    *  
-    * Decrypts a byte stream using the Blue Burst Encryption Algorithm at the passed offset, with the requested length.
-    * 
-    * Returns a decoded version of the passed byte array.
-    * 
-    */
+        /*
+        * byte[] Decrypt(byte[] ToEnd, int offset, int length)
+        *  
+        * Decrypts a byte stream using the Blue Burst Encryption Algorithm at the passed offset, with the requested length.
+        * 
+        * Returns a decoded version of the passed byte array.
+        * 
+        */
+        /// <summary>
+        /// Decrypts a byte stream at the provided offset and length.
+        /// </summary>
+        /// <param name="toDec">The byte stream to be operated on.</param>
+        /// <param name="offset">The starting position of the byte stream to be operated on.</param>
+        /// <param name="length">The total length of the byte stream that will be operated on. Must be divisible by 8.</param>
+        /// <returns>Byte array containing encrypted data.</returns>
+
         public byte[] Decrypt(byte[] toDec, uint offset, uint length)
         {
             try
@@ -350,11 +406,11 @@ namespace PSOCrypt
                 var data = new byte[length];
                 Buffer.BlockCopy(toDec, (int)offset, data, 0, (int)length);
 
-                uint eax, ecx, edx, ebx, ebp, esi, edi, tmp;
+                uint edx, ebx, ebp, esi, edi, tmp;
 
+                // eax = 0;
+                // ecx = 0;
                 edx = 0;
-                ecx = 0;
-                eax = 0;
 
                 while (edx < length)
                 {
@@ -388,7 +444,7 @@ namespace PSOCrypt
             }
             catch (Exception e)
             {
-                throw new PSOEncryptionException("The packet decryptor encountered an error: " + e.Message);
+                throw new PSOCryptException("There was a decryption error: " + e.Message);
             }
     }
 
@@ -404,14 +460,13 @@ namespace PSOCrypt
         }
 
 
-        /*
-         * byte[] Encrypt(byte[] ToEnd, int offset, int length)
-         * 
-         * Encrypts a byte stream using the Blue Burst Encryption Algorithm.
-         * 
-         * Returns an encoded version of the passed byte array.
-         * 
-         */
+        /// <summary>
+        /// Encrypts a byte stream at the specified offset and length.
+        /// </summary>
+        /// <param name="ToEnc">The byte stream to be operated on.</param>
+        /// <param name="offset">The starting position of the byte stream.</param>
+        /// <param name="length">The number of bytes that will be decrypted. Must be divisible by 8.</param>
+        /// <returns>Byte array containing encrypted data.</returns>
         public byte[] Encrypt(byte[] ToEnc, int offset, int length)
         {
             try
@@ -425,12 +480,12 @@ namespace PSOCrypt
 
                 Buffer.BlockCopy(ToEnc, offset, data, 0, length);
 
-                uint eax, ecx, edx, ebx, ebp, esi, edi, tmp;
+                uint edx, ebx, ebp, esi, edi, tmp;
 
                 edx = 0;
 
-                ecx = 0;
-                eax = 0;
+                //ecx = 0;
+                //eax = 0;
                 while (edx < length)
                 {
                     ebx = BitConverter.ToUInt32(data, (int) edx);
@@ -463,7 +518,7 @@ namespace PSOCrypt
             }
             catch(Exception e)
             {
-                throw new PSOEncryptionException("The packet encryptor encountered an error: " + e.Message);
+                throw new PSOCryptException("The packet encryptor encountered an error: " + e.Message);
             }
         }
 

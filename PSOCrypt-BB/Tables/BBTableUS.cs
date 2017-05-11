@@ -7,9 +7,9 @@ using System.Threading.Tasks;
 namespace PSOCrypt.Tables
 {
     /*
-     * This is the codetable for the Tethealla Teth12510 client. This table was provided with the latest release of Sylverant.
+     * This is the codetable for the official PSOBB Blue Burst client.
      * 
-     * The original source header from Tethealla is supplied alongside this distribution as "EncryptionHeader_Sylverant.txt".
+     * The original source header from Sylverant is supplied alongside this distribution as "EncryptionHeader_Sylverant.txt".
      * 
      */
     public static class BBTableUS
